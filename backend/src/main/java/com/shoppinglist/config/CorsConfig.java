@@ -4,22 +4,34 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.filter.CorsFilter;
 
+import java.util.Arrays;
 import java.util.List;
 
 @Configuration
 public class CorsConfig {
 
-    @Value("${app.cors.allowed-origins}")
+    @Value("${app.cors.allowed-origins:*}")
     private String allowedOrigins;
 
     @Bean
     public CorsFilter corsFilter() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of(allowedOrigins.split(",")));
+
+        List<String> origins = Arrays.asList(allowedOrigins.split(","));
+
+        // Si es *, permitir todos los orígenes
+        if (origins.contains("*")) {
+            config.addAllowedOriginPattern("*");
+        } else {
+            // Agregar los orígenes configurados
+            origins.forEach(o -> config.addAllowedOrigin(o.trim()));
+            // Permitir siempre subdominios de vercel.app (previews)
+            config.addAllowedOriginPattern("https://*.vercel.app");
+        }
+
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);
